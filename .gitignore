@@ -3,6 +3,9 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+key_private.json
+key_public.json
+
 # dotenv files
 .env
 
