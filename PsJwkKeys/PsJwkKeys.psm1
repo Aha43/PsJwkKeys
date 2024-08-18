@@ -1,89 +1,97 @@
-function New-Jwks {
+function New-JwkPair {
     param (
-        [int]$NumberOfKeys = 1,                     # Number of keys to generate
-        [string[]]$KeyProperties = @('alg', 'kid'), # Additional properties to add to each key
-        [string]$KeyType = 'RSA',                   # Key type: RSA, EC (Elliptic Curve), etc.
-        [int]$KeySize = 2048                        # Key size for RSA
+        [string]$KeyType = 'RSA',       # Key type: RSA, EC, etc.
+        [int]$KeySize = 2048,           # Key size for RSA
+        [string[]]$KeyProperties = @()  # Additional properties to add to each key
     )
 
-    function Generate-Jwk {
-        param (
-            [string]$KeyType,
-            [int]$KeySize,
-            [string[]]$Properties
-        )
+    $jwkPublic = @{}
+    $jwkPrivate = @{}
 
-        $jwk = @{}
-        
-        if ($KeyType -eq 'RSA') {
-            # Generate RSA key
-            $rsa = [System.Security.Cryptography.RSA]::Create($KeySize)
-            $parameters = $rsa.ExportParameters($false)
-            
-            $jwk.kty = 'RSA'
-            $jwk.n = [System.Convert]::ToBase64String($parameters.Modulus)
-            $jwk.e = [System.Convert]::ToBase64String($parameters.Exponent)
+    if ($KeyType -eq 'RSA') {
+        # Generate RSA key pair
+        $rsa = [System.Security.Cryptography.RSA]::Create($KeySize)
+        $parameters = $rsa.ExportParameters($true)  # Export private parameters
 
-            if ($Properties -contains 'd') {
-                $jwk.d = [System.Convert]::ToBase64String($parameters.D)
-            }
-            
-            if ($Properties -contains 'alg') {
-                $jwk.alg = 'RS256' # Default algorithm
-            }
+        $jwkPublic.kty = 'RSA'
+        $jwkPublic.n = [System.Convert]::ToBase64String($parameters.Modulus)
+        $jwkPublic.e = [System.Convert]::ToBase64String($parameters.Exponent)
 
-            if ($Properties -contains 'kid') {
-                $jwk.kid = [System.Guid]::NewGuid().ToString()
-            }
-        }
-        elseif ($KeyType -eq 'EC') {
-            # Generate EC key (for example using P-256 curve)
-            $ec = [System.Security.Cryptography.ECDsa]::Create('ECDSA_P256')
-            $parameters = $ec.ExportParameters($false)
+        $jwkPrivate.kty = 'RSA'
+        $jwkPrivate.n = [System.Convert]::ToBase64String($parameters.Modulus)
+        $jwkPrivate.e = [System.Convert]::ToBase64String($parameters.Exponent)
+        $jwkPrivate.d = [System.Convert]::ToBase64String($parameters.D)
+        $jwkPrivate.p = [System.Convert]::ToBase64String($parameters.P)
+        $jwkPrivate.q = [System.Convert]::ToBase64String($parameters.Q)
+        $jwkPrivate.dp = [System.Convert]::ToBase64String($parameters.DP)
+        $jwkPrivate.dq = [System.Convert]::ToBase64String($parameters.DQ)
+        $jwkPrivate.qi = [System.Convert]::ToBase64String($parameters.InverseQ)
 
-            $jwk.kty = 'EC'
-            $jwk.crv = 'P-256'
-            $jwk.x = [System.Convert]::ToBase64String($parameters.Q.X)
-            $jwk.y = [System.Convert]::ToBase64String($parameters.Q.Y)
-
-            if ($Properties -contains 'alg') {
-                $jwk.alg = 'ES256' # Default algorithm for EC
-            }
-
-            if ($Properties -contains 'kid') {
-                $jwk.kid = [System.Guid]::NewGuid().ToString()
-            }
+        if ($KeyProperties -contains 'alg') {
+            $jwkPublic.alg = 'RS256'
+            $jwkPrivate.alg = 'RS256'
         }
 
-        return $jwk
+        if ($KeyProperties -contains 'kid') {
+            $kid = [System.Guid]::NewGuid().ToString()
+            $jwkPublic.kid = $kid
+            $jwkPrivate.kid = $kid
+        }
     }
 
-    $jwks = @{
-        keys = @()
+    elseif ($KeyType -eq 'EC') {
+        # Generate EC key pair (for example using P-256 curve)
+        $ec = [System.Security.Cryptography.ECDsa]::Create('ECDSA_P256')
+        $parameters = $ec.ExportParameters($true)  # Export private parameters
+
+        $jwkPublic.kty = 'EC'
+        $jwkPublic.crv = 'P-256'
+        $jwkPublic.x = [System.Convert]::ToBase64String($parameters.Q.X)
+        $jwkPublic.y = [System.Convert]::ToBase64String($parameters.Q.Y)
+
+        $jwkPrivate.kty = 'EC'
+        $jwkPrivate.crv = 'P-256'
+        $jwkPrivate.x = [System.Convert]::ToBase64String($parameters.Q.X)
+        $jwkPrivate.y = [System.Convert]::ToBase64String($parameters.Q.Y)
+        $jwkPrivate.d = [System.Convert]::ToBase64String($parameters.D)
+
+        if ($KeyProperties -contains 'alg') {
+            $jwkPublic.alg = 'ES256'
+            $jwkPrivate.alg = 'ES256'
+        }
+
+        if ($KeyProperties -contains 'kid') {
+            $kid = [System.Guid]::NewGuid().ToString()
+            $jwkPublic.kid = $kid
+            $jwkPrivate.kid = $kid
+        }
     }
 
-    for ($i = 0; $i -lt $NumberOfKeys; $i++) {
-        $jwk = Generate-Jwk -KeyType $KeyType -KeySize $KeySize -Properties $KeyProperties
-        $jwks.keys += $jwk
+    return @{
+        PublicKey = $jwkPublic
+        PrivateKey = $jwkPrivate
     }
-
-    return $jwks
 }
 
-function Export-Jwks {
+function Export-JwkPair {
     param (
-        [int]$NumberOfKeys = 1,
-        [string[]]$KeyProperties = @('alg', 'kid'),
         [string]$KeyType = 'RSA',
         [int]$KeySize = 2048,
-        [string]$OutputFile
+        [string[]]$KeyProperties = @('alg', 'kid'),
+        [string]$PublicKeyFile,
+        [string]$PrivateKeyFile
     )
 
-    $jwks = New-Jwks -NumberOfKeys $NumberOfKeys -KeyProperties $KeyProperties -KeyType $KeyType -KeySize $KeySize
+    $keyPair = New-JwkPair -KeyType $KeyType -KeySize $KeySize -KeyProperties $KeyProperties
 
-    if ($OutputFile) {
-        $jwks | ConvertTo-Json -Depth 5 | Out-File -FilePath $OutputFile
-    } else {
-        $jwks | ConvertTo-Json -Depth 5
+    if ($PublicKeyFile) {
+        $keyPair.PublicKey | ConvertTo-Json -Depth 5 | Out-File -FilePath $PublicKeyFile
     }
+
+    if ($PrivateKeyFile) {
+        $keyPair.PrivateKey | ConvertTo-Json -Depth 5 | Out-File -FilePath $PrivateKeyFile
+    }
+
+    Write-Output "Public key saved to: $PublicKeyFile"
+    Write-Output "Private key saved to: $PrivateKeyFile"
 }

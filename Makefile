@@ -1,7 +1,8 @@
 # Variables
 MODULE_NAME = PsJwkKeys
 MODULE_PATH = ./$(MODULE_NAME)/$(MODULE_NAME).psm1
-OUTPUT_FILE = ./jwks_output.json
+PUBLIC_KEY_FILE = ./key_public.json
+PRIVATE_KEY_FILE = ./key_private.json
 
 # Default target: Import the module and display help
 all: import
@@ -11,22 +12,31 @@ import:
 	@echo "Importing module $(MODULE_NAME)..."
 	@pwsh -Command "Import-Module -Name '$(MODULE_PATH)'; Get-Module -Name '$(MODULE_NAME)'"
 
-# Generate JWKS and output to a file
-generate:
-	@echo "Generating JWKS and saving to $(OUTPUT_FILE)..."
-	@pwsh -Command "Import-Module -Name '$(MODULE_PATH)'; Export-Jwks -NumberOfKeys 3 -KeyProperties alg,kid -KeyType RSA -KeySize 2048 -OutputFile '$(OUTPUT_FILE)'"
-	@echo "JWKS generated and saved to $(OUTPUT_FILE)."
+# Generate RSA key pair and output to files
+generate-rsa:
+	@echo "Generating RSA key pair..."
+	@pwsh -Command "Import-Module -Name '$(MODULE_PATH)';Export-JwkPair -KeyType RSA -KeySize 2048 -KeyProperties alg,kid -PublicKeyFile '$(PUBLIC_KEY_FILE)' -PrivateKeyFile '$(PRIVATE_KEY_FILE)'"
+	@echo "Public key saved to $(PUBLIC_KEY_FILE)"
+	@echo "Private key saved to $(PRIVATE_KEY_FILE)"
 
-# Clean the output file
+# Generate EC key pair and output to files
+generate-ec:
+	@echo "Generating EC key pair..."
+	@pwsh -Command "Import-Module -Name '$(MODULE_PATH)'; Export-JwkPair -KeyType EC -KeyProperties alg,kid -PublicKeyFile '$(PUBLIC_KEY_FILE)' -PrivateKeyFile '$(PRIVATE_KEY_FILE)'"
+	@echo "Public key saved to $(PUBLIC_KEY_FILE)"
+	@echo "Private key saved to $(PRIVATE_KEY_FILE)"
+
+# Clean the output files
 clean:
 	@echo "Cleaning up..."
-	@rm -f $(OUTPUT_FILE)
-	@echo "Cleaned $(OUTPUT_FILE)."
+	@rm -f $(PUBLIC_KEY_FILE) $(PRIVATE_KEY_FILE)
+	@echo "Cleaned $(PUBLIC_KEY_FILE) and $(PRIVATE_KEY_FILE)."
 
 # Display help
 help:
 	@echo "Makefile for managing JWK module tasks:"
-	@echo "  make import     - Import the PowerShell module."
-	@echo "  make generate   - Generate JWKS and save to file."
-	@echo "  make clean      - Remove generated JWKS file."
-	@echo "  make help       - Display this help message."
+	@echo "  make import       - Import the PowerShell module."
+	@echo "  make generate-rsa - Generate RSA key pair and save to files."
+	@echo "  make generate-ec  - Generate EC key pair and save to files."
+	@echo "  make clean        - Remove generated key files."
+	@echo "  make help         - Display this help message."
