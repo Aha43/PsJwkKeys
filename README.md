@@ -15,12 +15,20 @@ Ensure that your system is running PowerShell 5.1 or newer, and the necessary cr
 
 ## Installation
 ```powershell
-   git clone https://github.com/Aha43/PsJwkKeys.git
-   cd PsJwkKeys
-   . ./tools/import.ps # if you want to have this available in all shell session do import in your profile
+git clone https://github.com/Aha43/PsJwkKeys.git
+cd PsJwkKeys
+. ./tools/import.ps # if you want to have this available in all shell session do import in your profile
 ```
 
 ## Example usage
 ```powershell
 Export-JwkSet -n 5 -KeyType 'RSA' -KeySize 2048 -PublicKeyFile 'public_jwks.json' -PrivateKeyFile 'private_keys.json'
 ```
+Parameters:
+
+- n: The number of key pairs to generate (default is 1).
+- KeyType: The type of key to generate (RSA or EC) (default is RSA).
+- KeySize: The size of the RSA key in bits (default is 2048).
+- KeyProperties: Additional properties to add to each key (default is alg and kid).
+- PublicKeyFile: The output file for the public keys (in JWKS format).
+- PrivateKeyFile: The output file for the private keys (in JSON format).
