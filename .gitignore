@@ -5,6 +5,8 @@
 
 key_private.json
 key_public.json
+private_keys.json
+public_jwks.json
 
 # dotenv files
 .env

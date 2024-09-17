@@ -38,7 +38,6 @@ function New-JwkPair {
             $jwkPrivate.kid = $kid
         }
     }
-
     elseif ($KeyType -eq 'EC') {
         # Generate EC key pair (for example using P-256 curve)
         $ec = [System.Security.Cryptography.ECDsa]::Create('ECDSA_P256')
@@ -73,25 +72,38 @@ function New-JwkPair {
     }
 }
 
-function Export-JwkPair {
+function Export-JwkSet {
     param (
-        [string]$KeyType = 'RSA',
-        [int]$KeySize = 2048,
-        [string[]]$KeyProperties = @('alg', 'kid'),
-        [string]$PublicKeyFile,
-        [string]$PrivateKeyFile
+        [int]$n = 1,                     # Number of key pairs
+        [string]$KeyType = 'RSA',        # Key type: RSA, EC, etc.
+        [int]$KeySize = 2048,            # Key size for RSA
+        [string[]]$KeyProperties = @('alg', 'kid'),  # Additional properties for each key
+        [string]$PublicKeyFile,           # Output file for public keys (JWKS)
+        [string]$PrivateKeyFile           # Output file for private keys (JSON)
     )
 
-    $keyPair = New-JwkPair -KeyType $KeyType -KeySize $KeySize -KeyProperties $KeyProperties
+    $jwks = @{
+        keys = @()
+    }
+    $privateKeys = @()
 
-    if ($PublicKeyFile) {
-        $keyPair.PublicKey | ConvertTo-Json -Depth 5 | Out-File -FilePath $PublicKeyFile
+    for ($i = 1; $i -le $n; $i++) {
+        $keyPair = New-JwkPair -KeyType $KeyType -KeySize $KeySize -KeyProperties $KeyProperties
+        $jwks.keys += $keyPair.PublicKey
+        $privateKeys += $keyPair.PrivateKey
     }
 
-    if ($PrivateKeyFile) {
-        $keyPair.PrivateKey | ConvertTo-Json -Depth 5 | Out-File -FilePath $PrivateKeyFile
-    }
+    # Convert the JWKS (public keys) to JSON and save it to a file
+    $jwksJson = $jwks | ConvertTo-Json -Depth 5
+    Set-Content -Path $PublicKeyFile -Value $jwksJson
 
-    Write-Output "Public key saved to: $PublicKeyFile"
-    Write-Output "Private key saved to: $PrivateKeyFile"
+    # Convert the private keys to JSON and save them to a separate file
+    $privateKeysJson = $privateKeys | ConvertTo-Json -Depth 5
+    Set-Content -Path $PrivateKeyFile -Value $privateKeysJson
+
+    Write-Output "Public keys saved to: $PublicKeyFile"
+    Write-Output "Private keys saved to: $PrivateKeyFile"
 }
+
+# Example usage:
+# Export-JwkSet -n 5 -KeyType 'RSA' -KeySize 2048 -PublicKeyFile 'public_jwks.json' -PrivateKeyFile 'private_keys.json'
