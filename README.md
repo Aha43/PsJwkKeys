@@ -14,10 +14,13 @@ This PowerShell script generates RSA and EC key pairs in JSON Web Key Set (JWKS)
 Ensure that your system is running PowerShell 5.1 or newer, and the necessary cryptographic libraries are available (which are standard on Windows).
 
 ## Installation
-
-1. Clone the repository:
-
-   ```bash
+```powershell
    git clone https://github.com/Aha43/PsJwkKeys.git
    cd PsJwkKeys
    . ./tools/import.ps # if you want to have this available in all shell session do import in your profile
+```
+
+## Example usage
+```powershell
+Export-JwkSet -n 5 -KeyType 'RSA' -KeySize 2048 -PublicKeyFile 'public_jwks.json' -PrivateKeyFile 'private_keys.json'
+```
