@@ -17,7 +17,7 @@ Ensure that your system is running PowerShell 5.1 or newer, and the necessary cr
 ```powershell
 git clone https://github.com/Aha43/PsJwkKeys.git
 cd PsJwkKeys
-. ./tools/import.ps # if you want to have this available in all shell session do import in your profile
+. ./tools/import.ps # if you want to have this available in all shell session do this module import in your profile
 ```
 
 ## Example usage
