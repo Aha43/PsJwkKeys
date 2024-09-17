@@ -1,6 +1,6 @@
 # PowerShell JWKS Key Pair Generator
 
-This PowerShell script generates RSA and EC key pairs in JSON Web Key Set (JWKS) format. It allows you to create multiple key pairs, export the public keys to a JWKS file (for uploading to an external Identity Provider), and store the private keys in a separate file (e.g., for secure storage in Azure Blob).
+This PowerShell function generates RSA and EC key pairs in JSON Web Key Set (JWKS) format. It allows you to create multiple key pairs, export the public keys to a JWKS file (for uploading to an external Identity Provider), and store the private keys in a separate file (e.g., for secure storage in Azure Blob).
 
 ## Features
 
